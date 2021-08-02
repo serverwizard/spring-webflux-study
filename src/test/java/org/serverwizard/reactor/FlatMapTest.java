@@ -10,6 +10,7 @@ import java.time.Duration;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static reactor.core.scheduler.Schedulers.parallel;
 
 public class FlatMapTest {
 
@@ -33,6 +34,38 @@ public class FlatMapTest {
                 .expectNext("SERVERWIZARD", "HONGJONGWAN")
                 .expectComplete()
                 .verify();
+    }
+
+    /**
+     * a, b, c
+     * d, e, f
+     * g
+     */
+    @Test
+    void flatMapTest3() throws InterruptedException {
+        Flux.just("a", "b", "c", "d", "e", "f", "g").log()
+                .window(3)
+                .flatMap(l -> l.map(this::toUpperCaseAndToLowerCase).subscribeOn(parallel()))
+                .doOnNext(System.out::println)
+                .blockLast();
+    }
+
+    @Test
+    void flatMapSequentialTest() {
+        Flux.just("a", "b", "c", "d", "e", "f", "g")
+                .window(3)
+                .flatMapSequential(l -> l.map(this::toUpperCaseAndToLowerCase))
+                .doOnNext(System.out::println)
+                .blockLast();
+    }
+
+    private List<String> toUpperCaseAndToLowerCase(String s) {
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return List.of(s.toUpperCase(), s.toLowerCase());
     }
 
     @Test
